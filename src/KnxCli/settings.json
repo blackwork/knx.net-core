@@ -1,5 +1,5 @@
 {
-    "Mode": "Tunneling",
+    "ConnectionMode": "Tunneling",
     "KnxGatewayIP": "10.10.10.26",
     "KnxGatewayPort": "3671",
     "KnxLocalPort": "3671"

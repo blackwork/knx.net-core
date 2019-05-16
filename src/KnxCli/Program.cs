@@ -13,11 +13,16 @@ namespace KnxCli
         public static int Main(string[] args)
         {
             var res = (int)ExitCode.Error;
-
-            Parser.Default.ParseArguments<Options>(args)
-                .WithParsed(options => res = (int)HandleParsedOptions(options))
-                .WithNotParsed(errs => HandleParseError(errs));
-
+            try
+            {
+                Parser.Default.ParseArguments<Options>(args)
+                    .WithParsed(options => res = (int)HandleParsedOptions(options))
+                    .WithNotParsed(errs => HandleParseError(errs));
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"{ex.GetType().Name}: {ex.Message}");
+            }
             return res;
         }
 
@@ -49,6 +54,11 @@ namespace KnxCli
                 Console.Error.WriteLine($"No settings available.");
                 return ExitCode.NoSettingsAvailable;
             }
+            if (string.IsNullOrEmpty(settings.ConnectionMode))
+            {
+                Console.Error.WriteLine($"No KNX connection mode specified (Tunneling or Routing).");
+                return ExitCode.NoActionSpecified;
+            }
 
             var actors = actorsModel.GetActorsAndGroupsByName(options.Actor);
             if (!actorsModel.CheckActorsAction(actors))
@@ -78,7 +88,7 @@ namespace KnxCli
             WriteLine(options, "Executing action...");
 
             var executor = new ActionExecutorService(settings);
-            if (!executor.Execute(settings.Mode, actors, action, options.Verbose))
+            if (!executor.Execute(settings.ConnectionMode, actors, action, options.Verbose))
             {
                 Console.Error.WriteLine($"Action execution failed.");
                 return ExitCode.ActionExecutionFailed;

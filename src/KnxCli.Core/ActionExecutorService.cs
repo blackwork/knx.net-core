@@ -24,7 +24,7 @@ namespace KnxCli.Core
         private KnxSettings settings;
 
 
-        public bool Execute(string mode, IEnumerable<Actor> actors, ActorAction action, bool verbose)
+        public bool Execute(string connectionMode, IEnumerable<Actor> actors, ActorAction action, bool verbose)
         {
             if (actors == null)
             {
@@ -36,7 +36,7 @@ namespace KnxCli.Core
             }
 
 
-            var finalMode = CheckAndGetMode(mode);
+            var finalConnectionMode = CheckAndGetConnectionMode(connectionMode);
 
             var hostName = Dns.GetHostName();
             var localIPs = Dns.GetHostAddresses(Dns.GetHostName());
@@ -51,7 +51,7 @@ namespace KnxCli.Core
                 {
                     KnxConnection connection = null;
 
-                    if (finalMode == 1)
+                    if (finalConnectionMode == 1)
                     {
                         connection = new KnxConnectionTunneling(
                             settings.KnxGatewayIP,
@@ -62,7 +62,7 @@ namespace KnxCli.Core
                             Debug = verbose
                         };
                     }
-                    else if (finalMode == 2)
+                    else if (finalConnectionMode == 2)
                     {
                         connection = new KnxConnectionRouting(
                             settings.KnxGatewayIP,
@@ -110,24 +110,24 @@ namespace KnxCli.Core
             return false;
         }
 
-        private static int CheckAndGetMode(string mode)
+        private static int CheckAndGetConnectionMode(string connectionMode)
         {
-            if (string.IsNullOrEmpty(mode))
+            if (string.IsNullOrEmpty(connectionMode))
             {
-                throw new ArgumentException(nameof(mode));
+                throw new ArgumentException(nameof(connectionMode));
             }
 
-            if (mode.Equals("Tunneling", StringComparison.InvariantCultureIgnoreCase))
+            if (connectionMode.Equals("Tunneling", StringComparison.InvariantCultureIgnoreCase))
             {
                 return 1;
             }
 
-            if (mode.Equals("Routing", StringComparison.InvariantCultureIgnoreCase))
+            if (connectionMode.Equals("Routing", StringComparison.InvariantCultureIgnoreCase))
             {
                 return 2;
             }
 
-            throw new ArgumentException("Unknown mode.", nameof(mode));
+            throw new ArgumentException("Unknown connection mode.", nameof(connectionMode));
         }
     }
 }
