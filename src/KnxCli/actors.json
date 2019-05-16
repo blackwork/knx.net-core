@@ -1,0 +1,26 @@
+[
+    {
+        "Name": "Light1",
+        "Description": "Light 1 in room 1",
+        "Address": "10/5/70",
+        "StatusAddress": "10/5/71",
+        "Action": {
+            "Type": "Switch"
+        },
+        "Groups": [
+            "room1"
+        ]
+    },
+    {
+        "Name": "Light2",
+        "Description": "Light 2 in room 1",
+        "Address": "10/5/60",
+        "StatusAddress": "10/5/61",
+        "Action": {
+            "Type": "Switch"
+        },
+        "Groups": [
+            "room1"
+        ]
+    }
+]
