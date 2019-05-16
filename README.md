@@ -1,11 +1,46 @@
 # KNX.net-core (KNX.net for .NET Core >= 2.x)
 
+## General info
+
 KNX.net-core (KNX.net for .NET Core >= 2.x) is a port of [lifeemotions KNX.net] (https://github.com/lifeemotions/knx.net) for [Microsofts .NET Core] (https://www.microsoft.com/net/core).
 
 KNX.net-core provides a [KNX](http://en.wikipedia.org/wiki/KNX_%28standard%29) API for .NET Core based in .NET Standard dll.
 
 
-=======================
+## Commandline client
+
+This fork of KNX.net (here called KNX.net-core) now contains a configurable commandline client is available.
+
+Usage examples:
+```
+dotnet KnxCli.dll -- --help
+dotnet KnxCli.dll -- Light1 on 
+dotnet KnxCli.dll -- Light1 off 
+```
+
+Configuration:
+actors.json to configure the actors:
+```json
+[
+    {
+        "Name": "Light1",
+        "Description": "Light 1 in room 1",
+        "Address": "10/5/70",
+        "StatusAddress": "10/5/71",
+        "Action": {
+            "Type": "Switch"
+        },
+        "Groups": [
+            "room1"
+        ]
+    }
+]
+```
+
+
+
+
+## API information
 
 This API allows to connect in both modes:
 * Tunneling
