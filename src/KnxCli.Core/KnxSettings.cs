@@ -9,10 +9,13 @@ namespace KnxCli
             KnxLocalPort = 3761;
         }
 
+        public string Mode { get; set; }
+
         public string KnxGatewayIP { get; set; }
+        
         public int KnxGatewayPort { get; set; }
 
         public int KnxLocalPort { get; set; }
-        
+
     }
 }

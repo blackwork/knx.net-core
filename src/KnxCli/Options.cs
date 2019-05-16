@@ -17,5 +17,7 @@ namespace KnxCli
         [Value(1, MetaName = "action", HelpText = "Actor action.")]
         public string Action { get; set; }
 
+        [Option('l', "list", Required = false, HelpText = "Lists all available actors and groups.")]
+        public bool List { get; set; }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using CommandLine;
 using KnxCli.Core;
 using KnxCli.Core.Actors;
@@ -11,53 +12,54 @@ namespace KnxCli
     {
         public static int Main(string[] args)
         {
-            var res = -1;
-            var parser = Parser.Default.ParseArguments<Options>(args)
-                .WithParsed(options => res = HandleParsedOptions(options))
+            var res = (int)ExitCode.Error;
+
+            Parser.Default.ParseArguments<Options>(args)
+                .WithParsed(options => res = (int)HandleParsedOptions(options))
                 .WithNotParsed(errs => HandleParseError(errs));
 
             return res;
         }
 
-        private static int HandleParsedOptions(Options options)
+        private static ExitCode HandleParsedOptions(Options options)
         {
+            var actorsModel = LoadActors();
+
+            if (options.List)
+            {
+                ListActors(actorsModel);
+                return ExitCode.OK;
+            }
+
             if (string.IsNullOrEmpty(options.Actor))
             {
                 Console.Error.WriteLine($"No actor specified.");
-                return 1;
+                return ExitCode.NoActorSpecified;
             }
 
             if (string.IsNullOrEmpty(options.Action))
             {
                 Console.Error.WriteLine($"No action specified.");
-                return 2;
+                return ExitCode.NoActionSpecified;
             }
-
 
             var settings = LoadSettings();
             if (settings == null)
             {
                 Console.Error.WriteLine($"No settings available.");
-                return 3;
+                return ExitCode.NoSettingsAvailable;
             }
 
-
-            var actorsModel = LoadActors();
-            var actors = new List<Actor>();
-            var actor = actorsModel.GetActorByName(options.Actor);
-            if (actor != null)
+            var actors = actorsModel.GetActorsAndGroupsByName(options.Action);
+            if (!actorsModel.CheckActorsAction(actors))
             {
-                actors.Add(actor);
+                Console.Error.WriteLine($"Actors configuration issue.");
+                return ExitCode.DifferentActorsActionConfiguration;
             }
-            else
-            {
-                actors.AddRange(actorsModel.GetActorsGroupByName(options.Actor));
-            }
-
-            if (actors.Count == 0)
+            if (!actors.Any())
             {
                 Console.Error.WriteLine($"Actor or group '{options.Actor}' not found.");
-                return 4;
+                return ExitCode.ActionOrGroupNotFound;
             }
 
 
@@ -65,26 +67,46 @@ namespace KnxCli
 
 
             var actionParser = new ActionTypeParserService();
-            var action = actionParser.Parse(actor, options.Action);
-
+            var action = actionParser.Parse(actors.First(), options.Action);
             if (action == null)
             {
                 Console.Error.WriteLine($"Cannot parse action: '{options.Action}'");
-                return 5;
+                return ExitCode.CannotParseAction;
             }
+
 
             WriteLine(options, "Executing action...");
 
             var executor = new ActionExecutorService(settings);
-            if (!executor.Execute(actors, action, options.Verbose))
+            if (!executor.Execute(settings.Mode, actors, action, options.Verbose))
             {
                 Console.Error.WriteLine($"Action execution failed.");
-                return 6;
+                return ExitCode.ActionExecutionFailed;
             }
 
             WriteLine(options, "Executed.");
 
             return 0;
+        }
+
+        private static void ListActors(ActorsModel actorsModel)
+        {
+            var names = actorsModel.AllActors.Select(l => l.Name).Distinct().OrderBy(l => l);
+            Console.WriteLine();
+            Console.WriteLine("Actors:");
+            foreach (var name in names)
+            {
+                Console.WriteLine(name);
+            }
+
+            var groups = actorsModel.AllActors.SelectMany(l => l.Groups).Distinct().OrderBy(l => l);
+            Console.WriteLine();
+            Console.WriteLine("Groups:");
+            foreach (var name in groups)
+            {
+                Console.WriteLine(name);
+            }
+            Console.WriteLine();
         }
 
         public static void WriteLine(Options options, string msg)

@@ -22,6 +22,27 @@ namespace KnxCli.Core
 
         private List<Actor> actors = new List<Actor>();
 
+        public bool CheckActorsAction(IEnumerable<Actor> actors)
+        {
+            return actors.Select(l => l.Action).Distinct().Count() == 1;
+        }
+
+        public IEnumerable<Actor> GetActorsAndGroupsByName(string name)
+        {
+            var actors = new List<Actor>();
+            var actor = GetActorByName(name);
+            if (actor != null)
+            {
+                actors.Add(actor);
+            }
+            else
+            {
+                actors.AddRange(GetActorsGroupByName(name));
+            }
+
+            return actors;
+        }
+
         public Actor GetActorByName(string name)
         {
             return actors.FirstOrDefault(l => l.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
