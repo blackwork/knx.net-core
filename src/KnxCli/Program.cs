@@ -50,7 +50,7 @@ namespace KnxCli
                 return ExitCode.NoSettingsAvailable;
             }
 
-            var actors = actorsModel.GetActorsAndGroupsByName(options.Action);
+            var actors = actorsModel.GetActorsAndGroupsByName(options.Actor);
             if (!actorsModel.CheckActorsAction(actors))
             {
                 Console.Error.WriteLine($"Actors configuration issue.");
