@@ -97,12 +97,12 @@ namespace KnxCli
 
         private static KnxSettings LoadSettings()
         {
-            var settingsFile = Path.Combine(Environment.GetCommandLineArgs()[0], "settings.json");
+            var settingsFile = Path.Combine(Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]), "settings.json");
 
 #if DEBUG
             if (!File.Exists(settingsFile))
             {
-                settingsFile = Path.Combine(Environment.GetCommandLineArgs()[0], "..", "..", "..", "..", "settings.json");
+                settingsFile = Path.Combine(Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]), "..", "..", "..", "settings.json");
             }
 #endif
 
@@ -114,12 +114,12 @@ namespace KnxCli
 
         private static ActorsModel LoadActors()
         {
-            var actorsFile = Path.Combine(Environment.GetCommandLineArgs()[0], "actors.json");
+            var actorsFile = Path.Combine(Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]), "actors.json");
 
 #if DEBUG
             if (!File.Exists(actorsFile))
             {
-                actorsFile = Path.Combine(Environment.GetCommandLineArgs()[0], "..", "..", "..", "..", "actors.json");
+                actorsFile = Path.Combine(Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]), "..", "..", "..", "actors.json");
             }
 #endif
 
