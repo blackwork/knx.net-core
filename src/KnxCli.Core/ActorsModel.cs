@@ -19,7 +19,6 @@ namespace KnxCli.Core
             this.actors.AddRange(actors);
         }
 
-
         private List<Actor> actors = new List<Actor>();
 
         public bool CheckActorsAction(IEnumerable<Actor> actors)
@@ -57,10 +56,22 @@ namespace KnxCli.Core
                 );
         }
 
+        public IEnumerable<Actor> GetActors(string actionType = "Switch")
+        {
+            return actors.Where(l => l.Action.Type == actionType).Distinct();
+        }
+
+        public IEnumerable<string> GetActorsGroups(string actionType = "Switch")
+        {
+            return actors
+                .Where(l => l.Action.Type == actionType)
+                .SelectMany(l => l.Groups != null ? l.Groups : new List<string>())
+                .Distinct();
+        }
+
         public IEnumerable<Actor> AllActors
         {
             get { return actors; }
         }
     }
-
 }

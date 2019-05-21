@@ -15,20 +15,27 @@ namespace KnxCli
             var res = (int)ExitCode.Error;
             try
             {
+                if (args.Length == 0)
+                {
+                    return (int)ShowMenu();
+                }
+
                 Parser.Default.ParseArguments<Options>(args)
                     .WithParsed(options => res = (int)HandleParsedOptions(options))
                     .WithNotParsed(errs => HandleParseError(errs));
+
+                return res;
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"{ex.GetType().Name}: {ex.Message}");
+                return res;
             }
-            return res;
         }
 
         private static ExitCode HandleParsedOptions(Options options)
         {
-            var actorsModel = LoadActors();
+            var actorsModel = Utilities.LoadActors();
 
             if (options.List)
             {
@@ -48,7 +55,7 @@ namespace KnxCli
                 return ExitCode.NoActionSpecified;
             }
 
-            var settings = LoadSettings();
+            var settings = Utilities.LoadSettings();
             if (settings == null)
             {
                 Console.Error.WriteLine($"No settings available.");
@@ -87,11 +94,15 @@ namespace KnxCli
 
             WriteLine(options, "Executing action...");
 
-            var executor = new ActionExecutorService(settings);
-            if (!executor.Execute(settings.ConnectionMode, actors, action, options.Verbose))
+            using (var executor = new ActionExecutorService(settings))
             {
-                Console.Error.WriteLine($"Action execution failed.");
-                return ExitCode.ActionExecutionFailed;
+                executor.Connect(settings.ConnectionMode, options.Verbose);
+
+                if (!executor.Execute(actors, action))
+                {
+                    Console.Error.WriteLine($"Action execution failed.");
+                    return ExitCode.ActionExecutionFailed;
+                }
             }
 
             WriteLine(options, "Executed.");
@@ -127,45 +138,24 @@ namespace KnxCli
             }
         }
 
-        private static KnxSettings LoadSettings()
-        {
-            var settingsFile = Path.Combine(Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]), "settings.json");
-
-#if DEBUG
-            if (!File.Exists(settingsFile))
-            {
-                settingsFile = Path.Combine(Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]), "..", "..", "..", "settings.json");
-            }
-#endif
-
-            var loaderService = new LoaderService();
-            var settings = loaderService.LoadSettings(settingsFile);
-
-            return settings;
-        }
-
-        private static ActorsModel LoadActors()
-        {
-            var actorsFile = Path.Combine(Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]), "actors.json");
-
-#if DEBUG
-            if (!File.Exists(actorsFile))
-            {
-                actorsFile = Path.Combine(Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]), "..", "..", "..", "actors.json");
-            }
-#endif
-
-            var loaderService = new LoaderService();
-            var actors = loaderService.LoadActors(actorsFile);
-
-            return actors;
-        }
-
         private static void HandleParseError(IEnumerable<Error> errs)
         {
             foreach (var err in errs)
             {
                 Console.WriteLine(err.ToString());
+            }
+        }
+
+        private static ExitCode ShowMenu()
+        {
+            using (var actorsMenu = new ActorsMenu())
+            {
+                if (!actorsMenu.Init())
+                {
+                    return ExitCode.Error;
+                }
+
+                return actorsMenu.ShowMenu();
             }
         }
     }

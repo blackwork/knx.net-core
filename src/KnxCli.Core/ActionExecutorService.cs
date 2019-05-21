@@ -1,6 +1,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -9,7 +10,7 @@ using KNXLib;
 
 namespace KnxCli.Core
 {
-    public class ActionExecutorService
+    public class ActionExecutorService : IDisposable
     {
         public ActionExecutorService(KnxSettings settings)
         {
@@ -23,16 +24,15 @@ namespace KnxCli.Core
 
         private KnxSettings settings;
 
+        private KnxConnection connection;
 
-        public bool Execute(string connectionMode, IEnumerable<Actor> actors, ActorAction action, bool verbose)
+        public bool Connect(
+            string connectionMode,
+            bool verbose)
         {
-            if (actors == null)
+            if (connection != null)
             {
-                throw new ArgumentNullException(nameof(actors));
-            }
-            if (action == null)
-            {
-                throw new ArgumentNullException(nameof(action));
+                return true;
             }
 
 
@@ -49,11 +49,10 @@ namespace KnxCli.Core
             {
                 try
                 {
-                    KnxConnection connection = null;
-
+                    KnxConnection conn = null;
                     if (finalConnectionMode == 1)
                     {
-                        connection = new KnxConnectionTunneling(
+                        conn = new KnxConnectionTunneling(
                             settings.KnxGatewayIP,
                             settings.KnxGatewayPort,
                             myIP,
@@ -64,7 +63,7 @@ namespace KnxCli.Core
                     }
                     else if (finalConnectionMode == 2)
                     {
-                        connection = new KnxConnectionRouting(
+                        conn = new KnxConnectionRouting(
                             settings.KnxGatewayIP,
                             settings.KnxGatewayPort)
                         {
@@ -76,24 +75,15 @@ namespace KnxCli.Core
                         throw new ArgumentException("Unknown mode.");
                     }
 
-                    connection.Connect();
-                    //connection.KnxEventDelegate += Event;
-
-                    foreach (var actor in actors)
+                    if (verbose)
                     {
-                        if (actor.Action.Type.Equals("Switch", StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            var val = (bool)action.Value;
-                            connection.Action(actor.Address, val);
-                        }
-                        else
-                        {
-                            Console.Error.WriteLine("Unknown actor action type");
-                            return false;
-                        }
+                        conn.KnxEventDelegate += Event;
+                        conn.KnxStatusDelegate += Status;
                     }
 
-                    connection.Disconnect();
+                    conn.Connect();
+
+                    connection = conn;
 
                     return true;
                 }
@@ -108,6 +98,50 @@ namespace KnxCli.Core
             }
 
             return false;
+        }
+
+        public bool Execute(
+            IEnumerable<Actor> actors,
+            ActorAction action)
+        {
+            if (connection == null)
+            {
+                throw new ArgumentNullException(nameof(connection));
+            }
+
+            if (actors == null)
+            {
+                throw new ArgumentNullException(nameof(actors));
+            }
+            if (action == null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
+
+            foreach (var actor in actors)
+            {
+                if (actor.Action.Type.Equals("Switch", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    var val = (bool)action.Value;
+                    connection.Action(actor.Address, val);
+                }
+                else
+                {
+                    Console.Error.WriteLine("Unknown actor action type");
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public void Disconnect()
+        {
+            if (connection != null)
+            {
+                connection.Disconnect();
+                connection = null;
+            }
         }
 
         private static int CheckAndGetConnectionMode(string connectionMode)
@@ -128,6 +162,21 @@ namespace KnxCli.Core
             }
 
             throw new ArgumentException("Unknown connection mode.", nameof(connectionMode));
+        }
+
+        private static void Event(string address, string state)
+        {
+            Debug.WriteLine("New Event: device " + address + " has status " + state);
+        }
+
+        private static void Status(string address, string state)
+        {
+            Debug.WriteLine("New Status: device " + address + " has status " + state);
+        }
+
+        public void Dispose()
+        {
+            Disconnect();
         }
     }
 }
