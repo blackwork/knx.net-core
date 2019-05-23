@@ -48,25 +48,27 @@ namespace KnxCli
         {
             Console.OutputEncoding = Encoding.Default;
 
-            Menu = new Menu
-            (
-                "Main",
-                new[]
-                {
-                    new Menu.Item("Lights", ShowLights),
-                    new Menu.Item("Exit", () => Menu.Close()),
-                }
-            );
+            using (Menu = new Menu(
+                    "Main",
+                    new[]
+                    {
+                        new Menu.Item("Lights", ShowLights),
+                        new Menu.Item("Groups", ShowGroups),
+                        new Menu.Item("Exit", () => Menu.Close()),
+                    }
+                ))
+            {
 
-            Menu.Main.MaxColumns = 1;
+                Menu.Main.MaxColumns = 1;
 
-            Menu.WriteLine("Use ←↑↓→ for navigation.");
-            Menu.WriteLine("Press Esc for return to main menu.");
-            Menu.WriteLine("Press Backspace for return to parent menu.");
+                Menu.WriteLine("Use ←↑↓→ for navigation.");
+                Menu.WriteLine("Press Esc for return to main menu.");
+                Menu.WriteLine("Press Backspace for return to parent menu.");
 
-            Menu.Begin();
+                Menu.Begin();
 
-            return ExitCode.OK;
+                return ExitCode.OK;
+            }
         }
 
         private void ShowLights()
@@ -77,37 +79,55 @@ namespace KnxCli
             }
 
 
-            var actorsAndGroups = new List<Tuple<string, string, Actor>>();
-            actorsAndGroups.AddRange(
-                actorsModel.GetActors()
-                .Select(l => new Tuple<string, string, Actor>("Actor", l.Name, l)));
-            actorsAndGroups.AddRange(
-                actorsModel.GetActorsGroups()
-                .Select(l => new Tuple<string, string, Actor>("Group", l, null)));
+            var actorsAndGroups = actorsModel.GetActors();
 
             foreach (var actor in actorsAndGroups)
             {
-                var subOn = new Menu.Item(
-                    $"{actor.Item1}: {actor.Item2} On",
-                    SwitchActor)
+                var subOn = new Menu.Item($"{actor.Name} On", SwitchActorOrGroup)
                 {
-                    Tag = new Tuple<Actor, string, string>(actor.Item3, actor.Item2, "true")
+                    Tag = new Tuple<Actor, string, string>(actor, actor.Name, "true")
                 };
 
                 Menu.Selected.Add(subOn);
 
-                var subOff = new Menu.Item(
-                    $"{actor.Item1}: {actor.Item2} Off",
-                    SwitchActor)
+                var subOff = new Menu.Item($"{actor.Name} Off", SwitchActorOrGroup)
                 {
-                    Tag = new Tuple<Actor, string, string>(actor.Item3, actor.Item2, "false")
+                    Tag = new Tuple<Actor, string, string>(actor, actor.Name, "false")
                 };
 
                 Menu.Selected.Add(subOff);
             }
         }
 
-        private void SwitchActor()
+        private void ShowGroups()
+        {
+            if (Menu.Selected.Items.Count > 0)
+            {
+                return;
+            }
+
+
+            var groups = actorsModel.GetActorsGroups();
+
+            foreach (var group in groups)
+            {
+                var subOn = new Menu.Item($"{group} On", SwitchActorOrGroup)
+                {
+                    Tag = new Tuple<Actor, string, string>(null, group, "true")
+                };
+
+                Menu.Selected.Add(subOn);
+
+                var subOff = new Menu.Item($"{group} Off", SwitchActorOrGroup)
+                {
+                    Tag = new Tuple<Actor, string, string>(null, group, "false")
+                };
+
+                Menu.Selected.Add(subOff);
+            }
+        }
+
+        private void SwitchActorOrGroup()
         {
             var actorInfo = (Tuple<Actor, string, string>)Menu.Selected.Tag;
 

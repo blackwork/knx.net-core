@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Nim.Console
 {
-    public class Menu
+    public class Menu : IDisposable
     {
         int lasLen = 0;
         bool canWork = true;
@@ -33,11 +33,11 @@ namespace Nim.Console
         public List<Item> Items { get; }
         public List<String> Log { get; } = new List<string>();
 
-        public Menu(): this("", new Item[0])
+        public Menu() : this("", new Item[0])
         {
         }
 
-        public Menu(Item[] items): this("", items)
+        public Menu(Item[] items) : this("", items)
         {
         }
 
@@ -61,167 +61,175 @@ namespace Nim.Console
         // Worker cycle
         public void Begin()
         {
-            System.Console.CursorVisible = false;
-
-            while (canWork)
+            try
             {
-                Refresh();
+
+                System.Console.CursorVisible = false;
+
+                while (canWork)
+                {
+                    Refresh();
 
                 escape: var info = System.Console.ReadKey(true);
 
-                switch (info.Key)
-                {
-                    case System.ConsoleKey.Backspace:
+                    switch (info.Key)
                     {
-                        if (Current.Parent != null)
-                        {
-                            foreach (var itm in Current.Parent.Items)
+                        case System.ConsoleKey.Backspace:
                             {
-                                if (itm == Current)
+                                if (Current.Parent != null)
                                 {
-                                    Selected = itm;
+                                    foreach (var itm in Current.Parent.Items)
+                                    {
+                                        if (itm == Current)
+                                        {
+                                            Selected = itm;
+
+                                            break;
+                                        }
+                                    }
+
+                                    Current = Current.Parent;
+                                }
+
+                                break;
+                            }
+                        case System.ConsoleKey.Escape:
+                            {
+                                Current = Main;
+
+                                if (Main.Items.Count > 0)
+                                {
+                                    Selected = Main.Items[0];
+                                }
+
+                                break;
+                            }
+                        case System.ConsoleKey.Enter:
+                            {
+                                if (Selected is InputItem)
+                                {
+                                    inputMode = true;
 
                                     break;
                                 }
-                            }
-
-                            Current = Current.Parent;
-                        }
-
-                        break;
-                    }
-                    case System.ConsoleKey.Escape:
-                    {
-                        Current = Main;
-
-                        if (Main.Items.Count > 0)
-                        {
-                            Selected = Main.Items[0];
-                        }
-
-                        break;
-                    }
-                    case System.ConsoleKey.Enter:
-                    {
-                        if (Selected is InputItem)
-                        {
-                            inputMode = true;
-
-                            break;
-                        }
 
 
-                        if (Selected.ActionIfConfirmed)
-                        {
-                            confimMode = true;
+                                if (Selected.ActionIfConfirmed)
+                                {
+                                    confimMode = true;
 
-                            break;
-                        }
+                                    break;
+                                }
 
-                        Selected.Action?.Invoke();
-
-                        if (Selected.Items.Count > 0)
-                        {
-                            Current = Selected;
-                            Selected = Current.Items[0];
-                        }
-
-                        break;
-                    }
-                    case System.ConsoleKey.UpArrow:
-                    {
-                        var sel = GetIndex();
-
-                        if (sel > -1)
-                        {
-                            sel -= lasLen;
-
-                            if (sel < 0)
-                            {
-                                sel += Current.Items.Count;
-                            }
-                        }
-
-                        Selected = Current.Items[sel];
-
-                        break;
-                    }
-                    case System.ConsoleKey.DownArrow:
-                    {
-                        var sel = GetIndex();
-
-                        if (sel > -1)
-                        {
-                            sel += lasLen;
-
-                            if (sel >= Current.Items.Count)
-                            {
-                                sel -= Current.Items.Count;
-                            }
-                        }
-
-                        Selected = Current.Items[sel];
-
-                        break;
-                    }
-                    case System.ConsoleKey.LeftArrow:
-                    {
-                        var sel = GetIndex();
-
-                        if (sel > -1)
-                        {
-                            sel--;
-
-                            if (sel < 0)
-                            {
-                                sel = Current.Items.Count - 1;
-                            }
-                        }
-
-                        Selected = Current.Items[sel];
-
-                        break;
-                    }
-                    case System.ConsoleKey.RightArrow:
-                    {
-                        var sel = GetIndex();
-
-                        if (sel > -1)
-                        {
-                            sel++;
-
-                            if (sel == Current.Items.Count)
-                            {
-                                sel = 0;
-                            }
-                        }
-
-                        Selected = Current.Items[sel];
-
-                        break;
-                    }
-                    case System.ConsoleKey.Delete:
-                    {
-                        Log.Clear();
-                        break;
-                    }
-                    default:
-                    {
-                        if (confimMode)
-                        {
-                            if (info.Key == System.ConsoleKey.Y)
-                            {
                                 Selected.Action?.Invoke();
+
+                                if (Selected.Items.Count > 0)
+                                {
+                                    Current = Selected;
+                                    Selected = Current.Items[0];
+                                }
+
+                                break;
                             }
+                        case System.ConsoleKey.UpArrow:
+                            {
+                                var sel = GetIndex();
 
-                            confimMode = false;
+                                if (sel > -1)
+                                {
+                                    sel -= lasLen;
 
-                            break;
-                        }
+                                    if (sel < 0)
+                                    {
+                                        sel += Current.Items.Count;
+                                    }
+                                }
 
-                        goto escape;
+                                Selected = Current.Items[sel];
+
+                                break;
+                            }
+                        case System.ConsoleKey.DownArrow:
+                            {
+                                var sel = GetIndex();
+
+                                if (sel > -1)
+                                {
+                                    sel += lasLen;
+
+                                    if (sel >= Current.Items.Count)
+                                    {
+                                        sel -= Current.Items.Count;
+                                    }
+                                }
+
+                                Selected = Current.Items[sel];
+
+                                break;
+                            }
+                        case System.ConsoleKey.LeftArrow:
+                            {
+                                var sel = GetIndex();
+
+                                if (sel > -1)
+                                {
+                                    sel--;
+
+                                    if (sel < 0)
+                                    {
+                                        sel = Current.Items.Count - 1;
+                                    }
+                                }
+
+                                Selected = Current.Items[sel];
+
+                                break;
+                            }
+                        case System.ConsoleKey.RightArrow:
+                            {
+                                var sel = GetIndex();
+
+                                if (sel > -1)
+                                {
+                                    sel++;
+
+                                    if (sel == Current.Items.Count)
+                                    {
+                                        sel = 0;
+                                    }
+                                }
+
+                                Selected = Current.Items[sel];
+
+                                break;
+                            }
+                        case System.ConsoleKey.Delete:
+                            {
+                                Log.Clear();
+                                break;
+                            }
+                        default:
+                            {
+                                if (confimMode)
+                                {
+                                    if (info.Key == System.ConsoleKey.Y)
+                                    {
+                                        Selected.Action?.Invoke();
+                                    }
+
+                                    confimMode = false;
+
+                                    break;
+                                }
+
+                                goto escape;
+                            }
                     }
                 }
+            }
+            finally
+            {
+                System.Console.CursorVisible = true;
             }
 
             int GetIndex()
@@ -261,9 +269,9 @@ namespace Nim.Console
                 System.Console.ForegroundColor = System.ConsoleColor.Green;
                 System.Console.Clear();
                 System.Console.Write(inp.Title + ": ");
-                
+
                 System.Console.ResetColor();
-                
+
                 inp.Value = System.Console.ReadLine();
 
                 inputMode = false;
@@ -306,8 +314,8 @@ namespace Nim.Console
 
             System.Console.WriteLine(nav);
             System.Console.WriteLine();
-            
-            var max_width = -1; 
+
+            var max_width = -1;
 
             for (var i = 0; i < Current.Items.Count; i++)
             {
@@ -373,7 +381,7 @@ namespace Nim.Console
                 var sb = new StringBuilder();
                 sb.AppendLine("______________________________");
                 sb.AppendLine("");
-                
+
                 foreach (var itm in Log)
                 {
                     sb.AppendLine(itm);
@@ -382,7 +390,7 @@ namespace Nim.Console
                 System.Console.Write(sb);
             }
         }
-        
+
         //
         public void Close()
         {
@@ -395,11 +403,16 @@ namespace Nim.Console
             Refresh();
         }
 
-        public class InputItem: Item
+        public void Dispose()
+        {
+            System.Console.CursorVisible = true;
+        }
+
+        public class InputItem : Item
         {
             public new Action<string> Action { get; set; }
             public string Value { get; set; } = "";
-            public string Title { get; set;  }
+            public string Title { get; set; }
 
             public InputItem(string name, string title, Action<string> action) : base(name, null as Action, 0)
             {
