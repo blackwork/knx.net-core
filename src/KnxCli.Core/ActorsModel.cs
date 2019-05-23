@@ -39,26 +39,33 @@ namespace KnxCli.Core
                 actors.AddRange(GetActorsGroupByName(name));
             }
 
-            return actors;
+            return actors.OrderBy(l => l.Name).ToList();
         }
 
         public Actor GetActorByName(string name)
         {
-            return actors.FirstOrDefault(l => l.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+            return actors.FirstOrDefault(
+                l => l.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
         }
 
         public IEnumerable<Actor> GetActorsGroupByName(string name)
         {
-            return actors.Where(
-                l => l.Groups != null &&
+            return actors
+                .Where(l =>
+                    l.Groups != null &&
                     l.Groups.FirstOrDefault(
                         x => x.Equals(name, StringComparison.InvariantCultureIgnoreCase)) != null
-                );
+                )
+                .OrderBy(l => l.Name);
         }
 
         public IEnumerable<Actor> GetActors(string actionType = "Switch")
         {
-            return actors.Where(l => l.Action.Type == actionType).Distinct();
+            return actors
+            .Where(l => l.Action.Type == actionType)
+            .Distinct()
+            .OrderBy(l => l.Name)
+            .ToList();
         }
 
         public IEnumerable<string> GetActorsGroups(string actionType = "Switch")
@@ -66,7 +73,9 @@ namespace KnxCli.Core
             return actors
                 .Where(l => l.Action.Type == actionType)
                 .SelectMany(l => l.Groups != null ? l.Groups : new List<string>())
-                .Distinct();
+                .Distinct()
+                .OrderBy(l => l)
+                .ToList();
         }
 
         public IEnumerable<Actor> AllActors
